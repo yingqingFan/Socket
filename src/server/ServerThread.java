@@ -1,7 +1,9 @@
 package server;
 
-import java.io.*;
-import java.net.ServerSocket;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 public class ServerThread extends Thread{
@@ -47,11 +49,8 @@ public class ServerThread extends Thread{
         String line = null;
         while((line = bufferedReader.readLine())!= null) {
             System.out.println("内容 : " + line);
-//            if (line.equals("bye")){
-//                output.close();
-//            }
+
         }
-//        System.out.println("read end");
     }
 
 }
