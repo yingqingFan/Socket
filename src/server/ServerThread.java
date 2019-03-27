@@ -44,12 +44,16 @@ public class ServerThread extends Thread{
         writer.flush();
     }
 
-    //定义一个传送字符串给服务器的方法
     public void readClient(Socket socket) throws IOException {
         String line = null;
         while((line = bufferedReader.readLine())!= null) {
             System.out.println("内容 : " + line);
-
+            //返回信息给服务器
+            if(line.startsWith("count")){
+                out("1");
+            }else{
+                out("server:"+line);
+            }
         }
     }
 

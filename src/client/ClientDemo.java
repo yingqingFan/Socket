@@ -7,7 +7,7 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class Client {
+public class ClientDemo {
     public static void main(String[] args) throws IOException {
         //客户端请求与服务器连接
         Socket socket = new Socket( "localhost", 9999);
@@ -19,17 +19,18 @@ public class Client {
         System.out.println(echo);
 
         while(true) {
-            System.out.print("客户端，输入信息：");
             //获取键盘输入
             BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
             String str = input.readLine();
             //发送数据到服务端
             out.println(str);
-            BufferedReader buf1 = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String echo1 = buf1.readLine();
-            System.out.println(echo1);
+            //接收信息
+           new ClientThread(socket).start();
         }
 
     }
+
+
+
 
 }

@@ -5,9 +5,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-public class ServerExcuter {
-
-
+public class ServerDemo {
 
     public static void main(String[] args) throws IOException {
         //创建一个通信类的对象
