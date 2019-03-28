@@ -4,8 +4,9 @@ import java.io.Serializable;
 
 public class MessageInfo implements Serializable {
     private String messageId;
-    private String userName;
-    private String friendName;
+    private String action;
+    private String clientId;
+    private String friendClientId;
     private String messageContent;
 
     public String getMessageId() {
@@ -16,20 +17,28 @@ public class MessageInfo implements Serializable {
         this.messageId = messageId;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getAction() {
+        return action;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setAction(String action) {
+        this.action = action;
     }
 
-    public String getFriendName() {
-        return friendName;
+    public String getClientId() {
+        return clientId;
     }
 
-    public void setFriendName(String friendName) {
-        this.friendName = friendName;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getFriendClientId() {
+        return friendClientId;
+    }
+
+    public void setFriendClientId(String friendClientId) {
+        this.friendClientId = friendClientId;
     }
 
     public String getMessageContent() {

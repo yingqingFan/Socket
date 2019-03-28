@@ -10,21 +10,21 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class ClientDemo {
+public class ClientDemo2 {
     public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients"};
     public static String ACTION = null;
     public static String FRIEND_ClIENTID = null;
     public static void main(String[] args) throws IOException {
-        ClientDemo clientDemo = new ClientDemo();
+        ClientDemo2 clientDemo2 = new ClientDemo2();
         //客户端请求与服务器连接
         Socket socket = new Socket( "localhost", 9999);
         //获取Socket的输出流，用来发送数据到服务端
         PrintStream out = new PrintStream(socket.getOutputStream());
 
         //接收信息
-        clientDemo.new ClientThread(socket).start();
+        clientDemo2.new ClientThread(socket).start();
         while(true) {
-            MessageInfo messageInfo = clientDemo.initMessageInfo();
+            MessageInfo messageInfo = clientDemo2.initMessageInfo();
             Gson gson = new Gson();
             String str = gson.toJson(messageInfo);
             //发送数据到服务端
@@ -91,11 +91,9 @@ public class ClientDemo {
                     messageInfo.setMessageContent(messageContent);
                     break;
                 case "1":
-                    ACTION = ACTIONS[1];
-                    messageInfo.setAction(ACTION);
-                    System.out.print("你想查询和谁之间的历史记录，请输入对方clientId:(按#键加Enter键退出历史查询)");
-                    String friendId = scanner.next();
-                    completeMessageInfoByFriendId(friendId,messageInfo);
+                    messageInfo.setAction(ACTIONS[1]);
+                    System.out.print("你想查询和谁之间的历史记录，请输入对方clientId:");
+                    messageInfo.setFriendClientId(scanner.next());
                     break;
                 case "2":
                     messageInfo.setAction(ACTIONS[2]);
