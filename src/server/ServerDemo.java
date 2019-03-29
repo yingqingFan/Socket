@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -18,8 +19,9 @@ import java.util.concurrent.Executors;
 public class ServerDemo {
 
     Map<String, Socket> socketMap = new HashMap<>();
-    Map<String, MessageInfo> messageHistoryMap = new HashMap<>();
+    List<MessageInfo> messageHistoryList = new ArrayList<>();
     Gson gson = new Gson();
+    String lineSeparator = System.getProperty("line.separator");
 
     public static void main(String[] args) throws IOException {
         ServerDemo serverDemo = new ServerDemo();
@@ -92,7 +94,7 @@ public class ServerDemo {
                 }else{
                     PrintWriter printWriter1 = new PrintWriter(socket.getOutputStream());
                     //提示客户端指定客户端不存在
-                    printWriter1.println("指定client"+socketId+" 不存在");
+                    printWriter1.println("指定client"+socketId+" 不存在,请退出重新选择！");
                     //强制输出到命令行的界面中
                     printWriter1.flush();
                 }
@@ -116,31 +118,49 @@ public class ServerDemo {
             String line = null;
             try {
                 while (true) {
-                    if (((line = bufferedReader.readLine()) != null)) {
+                    while (((line = bufferedReader.readLine()) != null)) {
                         System.out.println("内容 : " + line);
                         MessageInfo messageInfo = gson.fromJson(line, MessageInfo.class);
                         //如果客户端是发送消息
                         if(messageInfo.getAction().equals(ClientDemo.ACTIONS[0])) {
                             messageInfo.setClientId(id);
-                            //将messageInfo存入内存
-                            messageHistoryMap.put("1", messageInfo);
                             String socketIdTo = messageInfo.getFriendClientId();
                             String message = messageInfo.getMessageContent();
                             //发送信息给目标客户端
                             out("client: " + id + " : " + message, socketIdTo);
+                            //将messageInfo存入内存
+                            messageHistoryList.add(messageInfo);
                         }
                         //如果客户端是查看聊天历史记录，返回历史记录给客户端
                         else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[1])){
-                            Iterator<String> messageIterator = messageHistoryMap.keySet().iterator();
-                            while(messageIterator.hasNext()){
-                                String messageId = messageIterator.next();
-                                MessageInfo sendHistory = messageHistoryMap.get(messageId);
+                            //将历史记录按时间排序
+                            Collections.sort(messageHistoryList, new Comparator<MessageInfo>() {
+                                @Override
+                                public int compare(MessageInfo o1, MessageInfo o2) {
+                                    if(o1.getDate().before(o2.getDate())) {
+                                        return -1;
+                                    }else{
+                                        return 1;
+                                    }
+                                }
+                            });
+                            String historyStr="";
+                            for(int i = 0; i < messageHistoryList.size(); i++){
+                                MessageInfo sendHistory = messageHistoryList.get(i);
                                 if((sendHistory.getClientId().equals(id) && sendHistory.getFriendClientId().equals(messageInfo.getFriendClientId()))
                                         || (sendHistory.getClientId().equals(messageInfo.getFriendClientId()) && sendHistory.getFriendClientId().equals(id)) ) {
-                                    String messageStr ="clientId " + sendHistory.getClientId() + ":" + sendHistory.getMessageContent();
-                                    out(messageStr, id);
+                                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss:SSS a");
+                                    String dateStr = dateFormat.format(sendHistory.getDate());
+                                    String messageStr = dateStr + ":clientId" + sendHistory.getClientId() + ":" + sendHistory.getMessageContent();
+                                    if(i == messageHistoryList.size()-1) {
+                                        historyStr += messageStr;
+                                    }else{
+                                        historyStr += messageStr + lineSeparator;
+                                    }
                                 }
                             }
+                            //输出历史到客户端
+                            out(historyStr, id);
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
                         else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
@@ -150,14 +170,13 @@ public class ServerDemo {
                                 out(sId,id);
                             }
                         }
-
                     }
                 }
             }catch (IOException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
                 socketMap.remove(id);
-                System.out.println("移除 client"+id);
                 String outS = "client" + id + " 已下线";
+                System.out.println("client" + id + " 断开连接");
                 outOthers(outS);
             }
         }
