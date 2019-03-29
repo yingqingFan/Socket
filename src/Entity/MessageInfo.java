@@ -1,6 +1,7 @@
 package Entity;
 
 import java.io.Serializable;
+import java.util.Date;
 
 public class MessageInfo implements Serializable {
     private String messageId;
@@ -8,6 +9,7 @@ public class MessageInfo implements Serializable {
     private String clientId;
     private String friendClientId;
     private String messageContent;
+    private Date date;
 
     public String getMessageId() {
         return messageId;
@@ -47,5 +49,13 @@ public class MessageInfo implements Serializable {
 
     public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
     }
 }

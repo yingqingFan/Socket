@@ -33,11 +33,14 @@ public class ServerDemo {
         Executor pool = Executors.newFixedThreadPool(100);
         boolean flag = true;
         while (flag) {
+            //阻塞等待客户端连接
             Socket socket = server.accept();
             String socketId = null;
+            //为每个客户端分配唯一id
             while(StringUtils.isEmpty(socketId)||serverDemo.socketMap.get(socketId)!= null){
                 socketId =((int) (Math.random()*100))+"";
             }
+            //将socket存入内存中
             serverDemo.socketMap.put(socketId,socket);
             //new一个线程与客户端交互,server.accept()等待连接,pool执行线程
 //            pool.execute(serverDemo.new ServerThread(socket, socketId));
