@@ -1,24 +1,34 @@
-package client;
+package clienttest;
 
 import Entity.MessageInfo;
 import com.google.gson.Gson;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.util.Date;
 import java.util.Scanner;
 
-public class ClientDemo2 {
-    public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients"};
+public class ClientDemo {
+    public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients", "bind"};
     public static String ACTION = null;
     public static String FRIEND_ClIENTID = null;
     Scanner scanner = new Scanner(System.in);
     public static void main(String[] args) throws IOException {
-        ClientDemo2 clientDemo2 = new ClientDemo2();
+        String clientId = null;
+        if(ArrayUtils.isEmpty(args)){
+            System.out.println("必须指定客户端Id");
+            return;
+        }else{
+            clientId = args[0];
+            if(StringUtils.isEmpty(clientId)){
+                System.out.println("必须指定客户端Id");
+                return;
+            }
+        }
+        ClientDemo clientDemo = new ClientDemo();
         //客户端请求与服务器连接
         Socket socket;
         try {
@@ -28,13 +38,15 @@ public class ClientDemo2 {
             System.out.println("无法连接服务器");
             return;
         }
-        //接收信息
-        clientDemo2.new ClientThread(socket).start();
         //获取Socket的输出流，用来发送数据到服务端
         PrintStream out = new PrintStream(socket.getOutputStream());
+        //绑定客户端信息
+        clientDemo.bindInfoWithServer(clientId, out);
+        //接收信息
+        clientDemo.new ClientThread(socket).start();
         //循环接收指令发送消息
         while(true) {
-            MessageInfo messageInfo = clientDemo2.initMessageInfo();
+            MessageInfo messageInfo = clientDemo.initMessageInfo();
             if(messageInfo == null){
                 continue;
             }
@@ -137,4 +149,12 @@ public class ClientDemo2 {
         return messageInfo;
     }
 
+    //绑定clientId
+    public void bindInfoWithServer(String clientId, PrintStream out){
+        MessageInfo messageInfo = new MessageInfo();
+        messageInfo.setAction(ACTIONS[3]);
+        //将clientId发送到服务端
+        messageInfo.setMessageContent(clientId);
+        out.println();
+    }
 }
