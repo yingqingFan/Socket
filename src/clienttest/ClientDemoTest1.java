@@ -16,6 +16,7 @@ public class ClientDemoTest1 {
     public static String ACTION = null;
     public static String FRIEND_ClIENTID = null;
     Scanner scanner = new Scanner(System.in);
+    Gson gson = new Gson();
     public static void main(String[] args) throws IOException {
         String clientId = null;
         if(ArrayUtils.isEmpty(args)){
@@ -51,8 +52,7 @@ public class ClientDemoTest1 {
                 continue;
             }
             messageInfo.setDate(new Date());
-            Gson gson = new Gson();
-            String str = gson.toJson(messageInfo);
+            String str = clientDemoTest1.gson.toJson(messageInfo);
             //发送数据到服务端
             out.println(str);
         }
@@ -154,7 +154,7 @@ public class ClientDemoTest1 {
         MessageInfo messageInfo = new MessageInfo();
         messageInfo.setAction(ACTIONS[3]);
         //将clientId发送到服务端
-        messageInfo.setMessageContent(clientId);
-        out.println();
+        messageInfo.setClientId(clientId);
+        out.println(gson.toJson(messageInfo));
     }
 }

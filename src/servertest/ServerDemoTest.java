@@ -1,6 +1,7 @@
 package servertest;
 
 import Entity.MessageInfo;
+import client.ClientDemo;
 import clienttest.ClientDemoTest1;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
@@ -18,13 +19,16 @@ import java.util.concurrent.Executors;
 
 public class ServerDemoTest {
 
+    //key-value:socketId-socket
     Map<String, Socket> socketMap = new HashMap<>();
+    Map<String, String> clientSocketMap = new HashMap<>();
+    Map<String, String> socketClientMap = new HashMap<>();
     List<MessageInfo> messageHistoryList = new ArrayList<>();
     Gson gson = new Gson();
     String lineSeparator = System.getProperty("line.separator");
 
     public static void main(String[] args) throws IOException {
-        ServerDemoTest serverDemoTest = new ServerDemoTest();
+        ServerDemoTest serverDemo = new ServerDemoTest();
         //创建一个通信类的对象
         ServerSocket server = new ServerSocket(9999);
         //输出当前服务器的端口号
@@ -37,14 +41,14 @@ public class ServerDemoTest {
             Socket socket = server.accept();
             String socketId = null;
             //为每个客户端分配唯一id
-            while(StringUtils.isEmpty(socketId)|| serverDemoTest.socketMap.get(socketId)!= null){
+            while(StringUtils.isEmpty(socketId)||serverDemo.socketMap.get(socketId)!= null){
                 socketId =((int) (Math.random()*100))+"";
             }
             //将socket存入内存中
-            serverDemoTest.socketMap.put(socketId,socket);
+            serverDemo.socketMap.put(socketId,socket);
             //new一个线程与客户端交互,server.accept()等待连接,pool执行线程
-//            pool.execute(serverDemoTest.new ServerThread(socket, socketId));
-            serverDemoTest.new ServerThread(socket, socketId+"").start();
+//            pool.execute(serverDemo.new ServerThread(socket, socketId));
+            serverDemo.new ServerThread(socket, socketId+"").start();
         }
     }
 
@@ -67,15 +71,6 @@ public class ServerDemoTest {
             try {
                 writer = new PrintWriter(socket.getOutputStream());
                 bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-                //连接成功提示
-                String successMessage =  "当前client" + socketId + " 连接成功";
-                out(successMessage, socketId);
-
-                //告诉其他客户端当前客户端上线
-                String outS = "client" + socketId + " 已上线";
-                outOthers(outS);
-
                 //读取客户端信息并转发
                 readAndSend();
             } catch (IOException e) {
@@ -124,18 +119,32 @@ public class ServerDemoTest {
                     while (((line = bufferedReader.readLine()) != null)) {
                         System.out.println("内容 : " + line);
                         MessageInfo messageInfo = gson.fromJson(line, MessageInfo.class);
+                        //如果是绑定信息
+                        if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[3])){
+                            String clientId = messageInfo.getClientId();
+                            socketClientMap.put(socketId,clientId);
+                            clientSocketMap.put(clientId,socketId);
+                            //客户端上线成功提示
+                            String successMessage =  "当前client" + clientId + " 上线成功";
+                            out(successMessage, socketId);
+
+                            //告诉其他客户端当前客户端上线
+                            String outS = "client" + clientId + " 已上线";
+                            outOthers(outS);
+                        }
                         //如果客户端是发送消息
-                        if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[0])) {
-                            messageInfo.setClientId(socketId);
-                            String socketIdTo = messageInfo.getFriendClientId();
+                        if(messageInfo.getAction().equals(ClientDemo.ACTIONS[0])) {
+                            String clientId = socketClientMap.get(socketId);
+                            messageInfo.setClientId(clientId);
+                            String clientIdTo = messageInfo.getFriendClientId();
                             String message = messageInfo.getMessageContent();
                             //发送信息给目标客户端
-                            out("client: " + socketId + " : " + message, socketIdTo);
+                            out("client: " + clientId + " : " + message, clientSocketMap.get(clientId));
                             //将messageInfo存入内存
                             messageHistoryList.add(messageInfo);
                         }
                         //如果客户端是查看聊天历史记录，返回历史记录给客户端
-                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[1])){
+                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[1])){
                             //将历史记录按时间排序
                             Collections.sort(messageHistoryList, new Comparator<MessageInfo>() {
                                 @Override
@@ -166,7 +175,7 @@ public class ServerDemoTest {
                             out(historyStr, socketId);
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
-                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[2])){
+                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
                             Iterator<String> idIterator = socketMap.keySet().iterator();
                             while(idIterator.hasNext()){
                                 String sId = idIterator.next();
@@ -178,8 +187,11 @@ public class ServerDemoTest {
             }catch (IOException e) {
 //                e.printStackTrace();
                 socketMap.remove(socketId);
-                String outS = "client" + socketId + " 已下线";
-                System.out.println("client" + socketId + " 断开连接");
+                String clientId = socketClientMap.get(socketId);
+                socketClientMap.remove(socketId);
+                clientSocketMap.remove(clientId);
+                String outS = "client" + clientId + " 已下线";
+                System.out.println("client" + clientId + " 断开连接");
                 outOthers(outS);
             }
         }
