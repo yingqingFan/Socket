@@ -1,6 +1,6 @@
 package Entity;
 
-import clienttest.ClientDemo;
+import clienttest.ClientDemoTest1;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
 
@@ -118,7 +118,7 @@ public class ServerDemo {
                         System.out.println("内容 : " + line);
                         MessageInfo messageInfo = gson.fromJson(line, MessageInfo.class);
                         //如果是绑定信息
-                        if(messageInfo.getAction().equals(ClientDemo.ACTIONS[3])){
+                        if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[3])){
                             String clientId = messageInfo.getClientId();
                             socketClientMap.put(socketId,clientId);
                             clientSocketMap.put(clientId,socketId);
@@ -131,7 +131,7 @@ public class ServerDemo {
                             outOthers(outS);
                         }
                         //如果客户端是发送消息
-                        if(messageInfo.getAction().equals(ClientDemo.ACTIONS[0])) {
+                        if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[0])) {
                             String clientId = socketClientMap.get(socketId);
                             messageInfo.setClientId(clientId);
                             String clientIdTo = messageInfo.getFriendClientId();
@@ -142,7 +142,7 @@ public class ServerDemo {
                             messageHistoryList.add(messageInfo);
                         }
                         //如果客户端是查看聊天历史记录，返回历史记录给客户端
-                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[1])){
+                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[1])){
                             //将历史记录按时间排序
                             Collections.sort(messageHistoryList, new Comparator<MessageInfo>() {
                                 @Override
@@ -173,7 +173,7 @@ public class ServerDemo {
                             out(historyStr, socketId);
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
-                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
+                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[2])){
                             Iterator<String> idIterator = socketMap.keySet().iterator();
                             while(idIterator.hasNext()){
                                 String sId = idIterator.next();

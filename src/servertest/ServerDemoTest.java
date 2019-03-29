@@ -1,7 +1,7 @@
 package servertest;
 
 import Entity.MessageInfo;
-import clienttest.ClientDemo;
+import clienttest.ClientDemoTest1;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-public class ServerDemo {
+public class ServerDemoTest {
 
     Map<String, Socket> socketMap = new HashMap<>();
     List<MessageInfo> messageHistoryList = new ArrayList<>();
@@ -24,7 +24,7 @@ public class ServerDemo {
     String lineSeparator = System.getProperty("line.separator");
 
     public static void main(String[] args) throws IOException {
-        ServerDemo serverDemo = new ServerDemo();
+        ServerDemoTest serverDemoTest = new ServerDemoTest();
         //创建一个通信类的对象
         ServerSocket server = new ServerSocket(9999);
         //输出当前服务器的端口号
@@ -37,14 +37,14 @@ public class ServerDemo {
             Socket socket = server.accept();
             String socketId = null;
             //为每个客户端分配唯一id
-            while(StringUtils.isEmpty(socketId)||serverDemo.socketMap.get(socketId)!= null){
+            while(StringUtils.isEmpty(socketId)|| serverDemoTest.socketMap.get(socketId)!= null){
                 socketId =((int) (Math.random()*100))+"";
             }
             //将socket存入内存中
-            serverDemo.socketMap.put(socketId,socket);
+            serverDemoTest.socketMap.put(socketId,socket);
             //new一个线程与客户端交互,server.accept()等待连接,pool执行线程
-//            pool.execute(serverDemo.new ServerThread(socket, socketId));
-            serverDemo.new ServerThread(socket, socketId+"").start();
+//            pool.execute(serverDemoTest.new ServerThread(socket, socketId));
+            serverDemoTest.new ServerThread(socket, socketId+"").start();
         }
     }
 
@@ -125,7 +125,7 @@ public class ServerDemo {
                         System.out.println("内容 : " + line);
                         MessageInfo messageInfo = gson.fromJson(line, MessageInfo.class);
                         //如果客户端是发送消息
-                        if(messageInfo.getAction().equals(ClientDemo.ACTIONS[0])) {
+                        if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[0])) {
                             messageInfo.setClientId(socketId);
                             String socketIdTo = messageInfo.getFriendClientId();
                             String message = messageInfo.getMessageContent();
@@ -135,7 +135,7 @@ public class ServerDemo {
                             messageHistoryList.add(messageInfo);
                         }
                         //如果客户端是查看聊天历史记录，返回历史记录给客户端
-                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[1])){
+                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[1])){
                             //将历史记录按时间排序
                             Collections.sort(messageHistoryList, new Comparator<MessageInfo>() {
                                 @Override
@@ -166,7 +166,7 @@ public class ServerDemo {
                             out(historyStr, socketId);
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
-                        else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
+                        else if(messageInfo.getAction().equals(ClientDemoTest1.ACTIONS[2])){
                             Iterator<String> idIterator = socketMap.keySet().iterator();
                             while(idIterator.hasNext()){
                                 String sId = idIterator.next();

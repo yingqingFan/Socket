@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.util.Date;
 import java.util.Scanner;
 
-public class ClientDemo {
+public class ClientDemoTest1 {
     public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients", "bind"};
     public static String ACTION = null;
     public static String FRIEND_ClIENTID = null;
@@ -28,7 +28,7 @@ public class ClientDemo {
                 return;
             }
         }
-        ClientDemo clientDemo = new ClientDemo();
+        ClientDemoTest1 clientDemoTest1 = new ClientDemoTest1();
         //客户端请求与服务器连接
         Socket socket;
         try {
@@ -41,12 +41,12 @@ public class ClientDemo {
         //获取Socket的输出流，用来发送数据到服务端
         PrintStream out = new PrintStream(socket.getOutputStream());
         //绑定客户端信息
-        clientDemo.bindInfoWithServer(clientId, out);
+        clientDemoTest1.bindInfoWithServer(clientId, out);
         //接收信息
-        clientDemo.new ClientThread(socket).start();
+        clientDemoTest1.new ClientThread(socket).start();
         //循环接收指令发送消息
         while(true) {
-            MessageInfo messageInfo = clientDemo.initMessageInfo();
+            MessageInfo messageInfo = clientDemoTest1.initMessageInfo();
             if(messageInfo == null){
                 continue;
             }
