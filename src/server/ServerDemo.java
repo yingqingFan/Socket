@@ -52,28 +52,28 @@ public class ServerDemo {
         PrintWriter writer;//输出流
         BufferedReader bufferedReader;//输入流
         Socket socket;
-        String id;
+        String socketId;
 
-        public ServerThread(Socket socket, String id) {
+        public ServerThread(Socket socket, String socketId) {
             this.socket = socket;
-            this.id = id;
+            this.socketId = socketId;
         }
 
 
         @Override
         public void run() {
-            System.out.println("thread id:"+Thread.currentThread().getId());
+            System.out.println("thread socketId:"+Thread.currentThread().getId());
             //客户端连接后获取socket输出输入流
             try {
                 writer = new PrintWriter(socket.getOutputStream());
                 bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 //连接成功提示
-                String successMessage =  "当前client" + id + " 连接成功";
-                out(successMessage,id);
+                String successMessage =  "当前client" + socketId + " 连接成功";
+                out(successMessage, socketId);
 
                 //告诉其他客户端当前客户端上线
-                String outS = "client" + id + " 已上线";
+                String outS = "client" + socketId + " 已上线";
                 outOthers(outS);
 
                 //读取客户端信息并转发
@@ -111,7 +111,7 @@ public class ServerDemo {
             Iterator<String> idIterator = socketMap.keySet().iterator();
             while(idIterator.hasNext()){
                 String sId = idIterator.next();
-                if(!sId.equals(id)) {
+                if(!sId.equals(socketId)) {
                     out(outS, sId);
                 }
             }
@@ -126,11 +126,11 @@ public class ServerDemo {
                         MessageInfo messageInfo = gson.fromJson(line, MessageInfo.class);
                         //如果客户端是发送消息
                         if(messageInfo.getAction().equals(ClientDemo.ACTIONS[0])) {
-                            messageInfo.setClientId(id);
+                            messageInfo.setClientId(socketId);
                             String socketIdTo = messageInfo.getFriendClientId();
                             String message = messageInfo.getMessageContent();
                             //发送信息给目标客户端
-                            out("client: " + id + " : " + message, socketIdTo);
+                            out("client: " + socketId + " : " + message, socketIdTo);
                             //将messageInfo存入内存
                             messageHistoryList.add(messageInfo);
                         }
@@ -150,8 +150,8 @@ public class ServerDemo {
                             String historyStr="";
                             for(int i = 0; i < messageHistoryList.size(); i++){
                                 MessageInfo sendHistory = messageHistoryList.get(i);
-                                if((sendHistory.getClientId().equals(id) && sendHistory.getFriendClientId().equals(messageInfo.getFriendClientId()))
-                                        || (sendHistory.getClientId().equals(messageInfo.getFriendClientId()) && sendHistory.getFriendClientId().equals(id)) ) {
+                                if((sendHistory.getClientId().equals(socketId) && sendHistory.getFriendClientId().equals(messageInfo.getFriendClientId()))
+                                        || (sendHistory.getClientId().equals(messageInfo.getFriendClientId()) && sendHistory.getFriendClientId().equals(socketId)) ) {
                                     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss:SSS a");
                                     String dateStr = dateFormat.format(sendHistory.getDate());
                                     String messageStr = dateStr + ":clientId" + sendHistory.getClientId() + ":" + sendHistory.getMessageContent();
@@ -163,23 +163,23 @@ public class ServerDemo {
                                 }
                             }
                             //输出历史到客户端
-                            out(historyStr, id);
+                            out(historyStr, socketId);
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
                         else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
                             Iterator<String> idIterator = socketMap.keySet().iterator();
                             while(idIterator.hasNext()){
                                 String sId = idIterator.next();
-                                out(sId,id);
+                                out(sId, socketId);
                             }
                         }
                     }
                 }
             }catch (IOException e) {
 //                e.printStackTrace();
-                socketMap.remove(id);
-                String outS = "client" + id + " 已下线";
-                System.out.println("client" + id + " 断开连接");
+                socketMap.remove(socketId);
+                String outS = "client" + socketId + " 已下线";
+                System.out.println("client" + socketId + " 断开连接");
                 outOthers(outS);
             }
         }
