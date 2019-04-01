@@ -5,8 +5,10 @@ import com.google.gson.Gson;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.*;
-import java.net.ConnectException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Date;
 import java.util.Scanner;
@@ -17,6 +19,8 @@ public class ClientDemoTest1 {
     public static String FRIEND_ClIENTID = null;
     Scanner scanner = new Scanner(System.in);
     Gson gson = new Gson();
+    PrintStream out = null;
+    String clientId = null;
     public static void main(String[] args) throws IOException {
         String clientId = null;
         if(ArrayUtils.isEmpty(args)){
@@ -30,58 +34,68 @@ public class ClientDemoTest1 {
             }
         }
         ClientDemoTest1 clientDemoTest1 = new ClientDemoTest1();
-        //客户端请求与服务器连接
-        Socket socket;
+        clientDemoTest1.clientId = clientId;
+        Socket socket = clientDemoTest1.initClient();
+        //检测心跳重连
+        clientDemoTest1.new HeatBeat(socket).start();
+    }
+
+    public Socket initClient(){
+        Socket socket = null;
         try {
+            //客户端请求与服务器连接
             socket = new Socket( "localhost", 9999);
-        }catch (ConnectException e){
-//            e.printStackTrace();
-            System.out.println("无法连接服务器");
-            return;
+            //获取Socket的输出流，用来发送数据到服务端
+            PrintStream printStream = new PrintStream(socket.getOutputStream());
+            this.out = printStream;
+            //绑定客户端信息
+            bindInfoWithServer(clientId, out);
+        }catch (IOException e){
+            System.out.println("服务器未连接");
+            socket = null;
         }
-        //获取Socket的输出流，用来发送数据到服务端
-        PrintStream out = new PrintStream(socket.getOutputStream());
-        //绑定客户端信息
-        clientDemoTest1.bindInfoWithServer(clientId, out);
-        //接收信息
-        clientDemoTest1.new ClientThread(socket).start();
+        if(socket!=null){
+            receiveMessage(socket);
+            sendMessage();
+        }
+        return socket;
+    }
+
+    //绑定clientId
+    public void bindInfoWithServer(String clientId, PrintStream out){
+        MessageInfo messageInfo = new MessageInfo();
+        messageInfo.setAction(ACTIONS[3]);
+        //将clientId发送到服务端
+        messageInfo.setClientId(clientId);
+        out.println(gson.toJson(messageInfo));
+    }
+
+    public void receiveMessage(Socket socket){
+        //开启线程接收信息
+        new ClientThread(socket).start();
+    }
+
+    public void sendMessage(){
         //循环接收指令发送消息
         while(true) {
-            MessageInfo messageInfo = clientDemoTest1.initMessageInfo();
+            MessageInfo messageInfo = initMessageInfo();
             if(messageInfo == null){
                 continue;
             }
             messageInfo.setDate(new Date());
-            String str = clientDemoTest1.gson.toJson(messageInfo);
+            String str = gson.toJson(messageInfo);
             //发送数据到服务端
-            out.println(str);
-        }
-    }
-
-    class ClientThread extends Thread{
-        private Socket socket;
-        public ClientThread(Socket socket) {
-            this.socket = socket;
-        }
-
-        @Override
-        public void run() {
             try {
-                while(true) {
-                    BufferedReader buf1 = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String line = null;
-                    while (((line = buf1.readLine()) != null)) {
-                        System.out.println(line);
-                    }
-                }
-            } catch (IOException e) {
-//                e.printStackTrace();
-                System.out.println("无法连接服务器");
+                out.println(str);
+            }catch (Exception e){
+                System.out.println(e.getMessage());
+                return;
             }
         }
     }
 
-    public MessageInfo initMessageInfo() throws IOException{
+
+    public MessageInfo initMessageInfo(){
         MessageInfo messageInfo = new MessageInfo();
         Scanner scanner = new Scanner(System.in);
         if(ACTION != null && ACTION != ACTIONS[2]){
@@ -98,7 +112,7 @@ public class ClientDemoTest1 {
                 messageInfo = completeHistoryMessageInfo(messageInfo);
             }
         }else {
-            System.out.println("请选择你要做的操作序号：0." + ACTIONS[0] + " 1." + ACTIONS[1] + " 2." + ACTIONS[2]);
+            System.out.println("请选择操作序号：0." + ACTIONS[0] + " 1." + ACTIONS[1] + " 2." + ACTIONS[2]);
             String orderNumber = scanner.next();
             switch (orderNumber) {
                 case "0":
@@ -125,7 +139,7 @@ public class ClientDemoTest1 {
         return messageInfo;
     }
 
-    public MessageInfo completeSendMessageInfoById(String friendId, MessageInfo messageInfo) throws IOException{
+    public MessageInfo completeSendMessageInfoById(String friendId, MessageInfo messageInfo){
         FRIEND_ClIENTID = friendId;
         messageInfo.setFriendClientId(FRIEND_ClIENTID);
         System.out.println("To client" + FRIEND_ClIENTID + "(按Enter键发送消息,按#键和Enter退出聊天):");
@@ -138,7 +152,7 @@ public class ClientDemoTest1 {
         return messageInfo;
     }
 
-    public MessageInfo completeHistoryMessageInfo(MessageInfo messageInfo) throws IOException{
+    public MessageInfo completeHistoryMessageInfo(MessageInfo messageInfo){
         System.out.println("你想查询和谁之间的历史记录，请输入对方clientId(按#键加Enter键退出历史查询)：");
         String friendClientId = scanner.next();
         if (friendClientId.equals("#")) {
@@ -149,12 +163,48 @@ public class ClientDemoTest1 {
         return messageInfo;
     }
 
-    //绑定clientId
-    public void bindInfoWithServer(String clientId, PrintStream out){
-        MessageInfo messageInfo = new MessageInfo();
-        messageInfo.setAction(ACTIONS[3]);
-        //将clientId发送到服务端
-        messageInfo.setClientId(clientId);
-        out.println(gson.toJson(messageInfo));
+    class ClientThread extends Thread{
+        private Socket socket;
+        public ClientThread(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while(true) {
+                    BufferedReader buf1 = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String line = null;
+                    while (((line = buf1.readLine()) != null)) {
+                        System.out.println(line);
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("无法连接服务器");
+                return;
+            }
+        }
+    }
+
+    class HeatBeat extends Thread{
+        private Socket socket;
+        public HeatBeat(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while(true) {
+                    Thread.sleep(5000);
+                    if(socket == null || (socket != null && !socket.isConnected())){
+                        System.out.println("尝试重新连接...");
+                        socket = initClient();
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

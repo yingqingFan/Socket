@@ -176,11 +176,14 @@ public class ServerDemoTest {
                         }
                         //如果客户端是查看在线用户，返回在线用户给客户端
                         else if(messageInfo.getAction().equals(ClientDemo.ACTIONS[2])){
+                            String usersOnline = "";
                             Iterator<String> idIterator = socketMap.keySet().iterator();
                             while(idIterator.hasNext()){
                                 String sId = idIterator.next();
-                                out(sId, socketId);
+                                String clientId = socketClientMap.get(sId);
+                                usersOnline += clientId + lineSeparator;
                             }
+                            out(usersOnline, socketId);
                         }
                     }
                 }
