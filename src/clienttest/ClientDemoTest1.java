@@ -38,6 +38,12 @@ public class ClientDemoTest1 {
         Socket socket = clientDemoTest1.initClient();
         //检测心跳重连
         clientDemoTest1.new HeatBeat(socket).start();
+        if(socket!=null){
+            //接收消息
+            clientDemoTest1.receiveMessage(socket);
+            //发送消息
+            clientDemoTest1.sendMessage();
+        }
     }
 
     public Socket initClient(){
@@ -53,10 +59,6 @@ public class ClientDemoTest1 {
         }catch (IOException e){
             System.out.println("服务器未连接");
             socket = null;
-        }
-        if(socket!=null){
-            receiveMessage(socket);
-            sendMessage();
         }
         return socket;
     }
@@ -192,14 +194,29 @@ public class ClientDemoTest1 {
             this.socket = socket;
         }
 
+        public Boolean isServerClose(Socket socket){
+            try{
+                socket.sendUrgentData(0xFF);
+                return false;
+            }catch(Exception se){
+                return true;
+            }
+        }
+
         @Override
         public void run() {
             try {
                 while(true) {
                     Thread.sleep(5000);
-                    if(socket == null || (socket != null && !socket.isConnected())){
+                    if(socket == null || (socket != null && isServerClose(socket))){
                         System.out.println("尝试重新连接...");
                         socket = initClient();
+                        if(socket!=null){
+                            //接收消息
+                            receiveMessage(socket);
+                            //发送消息
+                            sendMessage();
+                        }
                     }
                 }
             } catch (InterruptedException e) {

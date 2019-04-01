@@ -139,7 +139,7 @@ public class ServerDemoTest {
                             String clientIdTo = messageInfo.getFriendClientId();
                             String message = messageInfo.getMessageContent();
                             //发送信息给目标客户端
-                            out("client: " + clientId + " : " + message, clientSocketMap.get(clientId));
+                            out("client: " + clientId + " : " + message, clientSocketMap.get(clientIdTo));
                             //将messageInfo存入内存
                             messageHistoryList.add(messageInfo);
                         }
