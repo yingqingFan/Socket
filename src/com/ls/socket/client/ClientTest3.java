@@ -5,8 +5,8 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 
-public class ClientTest2 {
-    private static Logger log = Logger.getLogger(ClientTest2.class);
+public class ClientTest3 {
+    private static Logger log = Logger.getLogger(ClientTest3.class);
     public static void main(String[] args) throws IOException {
         if(ArrayUtils.isEmpty(args)){
             log.error("必须指定客户端Id");

@@ -2,16 +2,19 @@ package com.ls.socket.client;
 
 import com.google.gson.Gson;
 import com.ls.socket.entity.MessageInfo;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 
-public class ReconnectThread extends Thread{
+public class HeartBeatThread extends Thread{
+    private static Logger log = Logger.getLogger(HeartBeatThread.class);
     private Socket socket;
     private String ip;
     private int port;
-    public ReconnectThread(Socket socket,String ip, int port) {
+
+    public HeartBeatThread(Socket socket, String ip, int port) {
         this.socket = socket;
         this.ip = ip;
         this.port = port;
@@ -21,9 +24,9 @@ public class ReconnectThread extends Thread{
     public void run() {
         while(true) {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error(e.getMessage());
             }
             sendHeartBeat();
         }
@@ -36,7 +39,7 @@ public class ReconnectThread extends Thread{
             try {
                 printStream = new PrintStream(socket.getOutputStream());
                 MessageInfo messageInfo = new MessageInfo();
-                messageInfo.setClientId(SocketClient.clientId);
+                messageInfo.setClientId(SocketClient.CLIENT_ID);
                 messageInfo.setAction(SocketClient.ACTIONS[4]);
                 messageInfo.setMessageContent("心跳");
                 printStream.println(new Gson().toJson(messageInfo));
@@ -45,7 +48,7 @@ public class ReconnectThread extends Thread{
                 try {
                     socket.close();
                 } catch (IOException e1) {
-                    e1.printStackTrace();
+                   log.error(e1.getMessage());
                 }
                 if(printStream!=null) {
                     printStream.close();
@@ -58,7 +61,7 @@ public class ReconnectThread extends Thread{
     }
 
     public void reconnect(String ip, int port){
-        System.out.println("尝试重新连接...");
+        log.debug("尝试重新连接...");
         socket = SocketClient.initClient(ip, port);
         if(socket!=null){
             //接收消息

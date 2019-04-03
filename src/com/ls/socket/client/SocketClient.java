@@ -3,6 +3,7 @@ package com.ls.socket.client;
 import com.google.gson.Gson;
 import com.ls.socket.entity.MessageInfo;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -10,18 +11,19 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class SocketClient {
-    public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients", "bind", "heartbeat"};
+    public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients", "bind", "heartbeat", "init send"};
     public static String ACTION = null;
-    public static String FRIEND_ClIENTID = null;
-    public static String clientId = null;
-
+    public static String FRIEND_CLIENT_ID = null;
+    public static String CLIENT_ID = null;
+    private static Logger log = Logger.getLogger(SocketClient.class);
     public static void run(String clientId, String ip, int port){
         if(StringUtils.isEmpty(clientId)){
             System.out.println("必须指定客户端Id");
+            log.error("必须指定客户端Id");
             return;
         }
         SocketClient socketClient = new SocketClient();
-        socketClient.clientId = clientId;
+        socketClient.CLIENT_ID = clientId;
         Socket socket = socketClient.initClient(ip, port);
         if(socket!=null){
             //接收消息
@@ -30,7 +32,7 @@ public class SocketClient {
             socketClient.sendMessage(socket);
         }
         //检测重连
-        new ReconnectThread(socket, ip, port).start();
+        new HeartBeatThread(socket, ip, port).start();
     }
 
     protected static Socket initClient(String ip, int port){
@@ -38,23 +40,25 @@ public class SocketClient {
         PrintStream printStream = null;
         try {
             //客户端请求与服务器连接
+            log.debug("客户端连接中...");
             socket = new Socket( ip, port);
+            log.debug("客户端已连接");
             //获取Socket的输出流，用来发送数据到服务端
             printStream = new PrintStream(socket.getOutputStream());
             //绑定客户端信息
-            bindInfoWithServer(clientId, printStream);
+            bindInfoWithServer(CLIENT_ID, printStream);
         }catch (IOException e){
             if(socket != null){
                 try {
                     socket.close();
                 } catch (IOException e1) {
-                    e1.printStackTrace();
+                    log.error(e1.getMessage());
                 }
             }
             if(printStream !=null){
                 printStream.close();
             }
-            System.out.println("服务器未连接");
+            log.debug("服务器未连接");
         }
         return socket;
     }
@@ -78,33 +82,25 @@ public class SocketClient {
         new SendThread(socket).start();
     }
 
-
     protected static MessageInfo initMessageInfo(){
         MessageInfo messageInfo = new MessageInfo();
         Scanner scanner = new Scanner(System.in);
         if(ACTION != null && ACTION != ACTIONS[2]){
             messageInfo.setAction(ACTION);
             if(ACTION.equals(ACTIONS[0])){
-                if(FRIEND_ClIENTID != null){
-                    messageInfo = completeSendMessageInfoById(FRIEND_ClIENTID,messageInfo);
-                }else{
-                    System.out.print("请输入好友clientId:");
-                    String friendClientId = scanner.next();
-                    messageInfo = completeSendMessageInfoById(friendClientId,messageInfo);
-                }
+                messageInfo = completeSendMessageInfoById(FRIEND_CLIENT_ID,messageInfo);
             }else if(ACTION.equals(ACTIONS[1])){
                 messageInfo = completeHistoryMessageInfo(messageInfo);
             }
         }else {
-            System.out.println("请选择操作序号：0." + ACTIONS[0] + " 1." + ACTIONS[1] + " 2." + ACTIONS[2]);
+            System.out.println("选择序号：0." + ACTIONS[0] + " 1." + ACTIONS[1] + " 2." + ACTIONS[2]);
             String orderNumber = scanner.next();
             switch (orderNumber) {
                 case "0":
                     ACTION = ACTIONS[0];
-                    messageInfo.setAction(ACTION);
-                    System.out.print("请输入好友clientId:");
+                    System.out.print("请输入好友clientId(按Enter键发送消息,按#键和Enter退出聊天):");
                     String friendClientId = scanner.next();
-                    messageInfo = completeSendMessageInfoById(friendClientId, messageInfo);
+                    messageInfo = initSend(friendClientId, messageInfo);
                     break;
                 case "1":
                     ACTION = ACTIONS[1];
@@ -123,10 +119,17 @@ public class SocketClient {
         return messageInfo;
     }
 
+    //初始化发送消息（发送前显示历史消息）
+    protected static MessageInfo initSend(String friendId, MessageInfo messageInfo){
+        FRIEND_CLIENT_ID = friendId;
+        messageInfo.setFriendClientId(FRIEND_CLIENT_ID);
+        messageInfo.setAction(ACTIONS[5]);
+        return messageInfo;
+    }
+
     protected static MessageInfo completeSendMessageInfoById(String friendId, MessageInfo messageInfo){
-        FRIEND_ClIENTID = friendId;
-        messageInfo.setFriendClientId(FRIEND_ClIENTID);
-        System.out.println("To client" + FRIEND_ClIENTID + "(按Enter键发送消息,按#键和Enter退出聊天):");
+        FRIEND_CLIENT_ID = friendId;
+        messageInfo.setFriendClientId(FRIEND_CLIENT_ID);
         Scanner scanner = new Scanner(System.in);
         String messageContent = scanner.next();
         if (messageContent.equals("#")) {
@@ -138,7 +141,7 @@ public class SocketClient {
     }
 
     protected static MessageInfo completeHistoryMessageInfo(MessageInfo messageInfo){
-        System.out.println("你想查询和谁之间的历史记录，请输入对方clientId(按#键加Enter键退出历史查询)：");
+        System.out.println("请输入对方clientId(按#键加Enter键退出历史查询)：");
         Scanner scanner = new Scanner(System.in);
         String friendClientId = scanner.next();
         if (friendClientId.equals("#")) {
