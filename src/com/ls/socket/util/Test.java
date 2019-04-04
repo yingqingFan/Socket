@@ -3,10 +3,12 @@ package com.ls.socket.util;
 import org.apache.log4j.Logger;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Test implements Serializable {
     private static final long serialVersionUID = -1406224361144906998L;
-    private static Logger log = Logger.getLogger(Test.class);
+    private static Logger log = Logger.getLogger(com.ls.socket.util.Test.class);
     private String name;
 
     public Test(String name) {
@@ -31,6 +33,8 @@ public class Test implements Serializable {
 //        }
 //        System.out.println(SocketServer.class.getResource("/").getPath());
 
-        log.error("aaa");
+        List<String> a = new ArrayList<>();
+        a.removeAll(a);
+        System.out.println(a);
     }
 }

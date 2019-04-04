@@ -6,10 +6,10 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 
 public class ClientTest2 {
-    private static Logger log = Logger.getLogger(ClientTest2.class);
+    private static Logger log = Logger.getLogger(com.ls.socket.client.ClientTest2.class);
     public static void main(String[] args) throws IOException {
         if(ArrayUtils.isEmpty(args)){
-            log.error("必须指定客户端Id");
+            log.error("必须指定用户名");
             return;
         }
         String clientId = args[0];

@@ -1,5 +1,6 @@
 package com.ls.socket.server;
 
+import com.ls.socket.service.MessageInfoService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
@@ -12,12 +13,17 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class SocketServer {
-    private static Logger log = Logger.getLogger(SocketServer.class);
+    private static Logger log = Logger.getLogger(com.ls.socket.server.SocketServer.class);
     protected static Map<String, Socket> socketMap = new HashMap<>();
     protected static Map<String, String> clientSocketMap = new HashMap<>();
     protected static Map<String, String> socketClientMap = new HashMap<>();
-    public static void run(int port) throws IOException {
-        SocketServer socketServer = new SocketServer();
+    public static void run(int port, String dataPath) throws IOException {
+        if(StringUtils.isEmpty(dataPath)){
+            log.error("必须指定数据存储位置");
+            System.exit(0);
+        }
+        MessageInfoService.MESSAGE_FILE_PATH = dataPath+"/messageInfo.txt";
+        com.ls.socket.server.SocketServer socketServer = new com.ls.socket.server.SocketServer();
         //创建一个通信类的对象
         ServerSocket server = new ServerSocket(port);
         //输出当前服务器的端口号

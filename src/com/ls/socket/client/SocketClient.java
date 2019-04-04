@@ -1,28 +1,36 @@
 package com.ls.socket.client;
 
 import com.google.gson.Gson;
+import com.ls.socket.client.entity.MessageReadMark;
+import com.ls.socket.client.service.MessageReadMarkService;
+import com.ls.socket.entity.ChatRoom;
 import com.ls.socket.entity.MessageInfo;
+import com.ls.socket.service.MessageInfoService;
+import com.ls.socket.service.RoomUserService;
+import com.ls.socket.service.UserService;
+import com.ls.socket.util.SocketUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Scanner;
 
 public class SocketClient {
-    public static final String[] ACTIONS = new String[]{"send message", "view history", "view online clients", "bind", "heartbeat", "init send"};
     public static String ACTION = null;
-    public static String FRIEND_CLIENT_ID = null;
+    public static String ROOM_ID = null;
     public static String CLIENT_ID = null;
-    private static Logger log = Logger.getLogger(SocketClient.class);
+    private static Logger log = Logger.getLogger(com.ls.socket.client.SocketClient.class);
     public static void run(String clientId, String ip, int port){
         if(StringUtils.isEmpty(clientId)){
-            System.out.println("必须指定客户端Id");
-            log.error("必须指定客户端Id");
-            return;
+            System.out.println("必须指定用户名");
+            log.error("必须指定用户名");
+            System.exit(0);
         }
-        SocketClient socketClient = new SocketClient();
+        com.ls.socket.client.SocketClient socketClient = new com.ls.socket.client.SocketClient();
         socketClient.CLIENT_ID = clientId;
         Socket socket = socketClient.initClient(ip, port);
         if(socket!=null){
@@ -37,16 +45,16 @@ public class SocketClient {
 
     protected static Socket initClient(String ip, int port){
         Socket socket = null;
-        PrintStream printStream = null;
+        PrintWriter writer = null;
         try {
             //客户端请求与服务器连接
             log.debug("客户端连接中...");
             socket = new Socket( ip, port);
             log.debug("客户端已连接");
             //获取Socket的输出流，用来发送数据到服务端
-            printStream = new PrintStream(socket.getOutputStream());
+            writer = new PrintWriter(socket.getOutputStream());
             //绑定客户端信息
-            bindInfoWithServer(CLIENT_ID, printStream);
+            bindInfoWithServer(CLIENT_ID, writer);
         }catch (IOException e){
             if(socket != null){
                 try {
@@ -55,8 +63,8 @@ public class SocketClient {
                     log.error(e1.getMessage());
                 }
             }
-            if(printStream !=null){
-                printStream.close();
+            if(writer != null) {
+                writer.close();
             }
             log.debug("服务器未连接");
         }
@@ -64,12 +72,13 @@ public class SocketClient {
     }
 
     //绑定clientId
-    protected static void bindInfoWithServer(String clientId, PrintStream out){
+    protected static void bindInfoWithServer(String clientId, PrintWriter writer){
         MessageInfo messageInfo = new MessageInfo();
-        messageInfo.setAction(ACTIONS[3]);
+        messageInfo.setAction(SocketUtil.ACTIONS[3]);
         //将clientId发送到服务端
         messageInfo.setClientId(clientId);
-        out.println(new Gson().toJson(messageInfo));
+        writer.println(new Gson().toJson(messageInfo));
+        writer.flush();
     }
 
     //开启线程接收信息
@@ -85,30 +94,44 @@ public class SocketClient {
     protected static MessageInfo initMessageInfo(){
         MessageInfo messageInfo = new MessageInfo();
         Scanner scanner = new Scanner(System.in);
-        if(ACTION != null && ACTION != ACTIONS[2]){
+        if(ACTION != null){
             messageInfo.setAction(ACTION);
-            if(ACTION.equals(ACTIONS[0])){
-                messageInfo = completeSendMessageInfoById(FRIEND_CLIENT_ID,messageInfo);
-            }else if(ACTION.equals(ACTIONS[1])){
-                messageInfo = completeHistoryMessageInfo(messageInfo);
+            if(ACTION.equals(SocketUtil.ACTIONS[0])){
+                messageInfo = completeSendMessageInfoByRoomId(ROOM_ID,messageInfo);
+            }else if(ACTION.equals(SocketUtil.ACTIONS[1])){
+                String printStr = "";
+                while (!printStr.equals("#")) {
+                    printStr = scanner.next();
+                }
+                ACTION = null;
+                messageInfo = null;
+            }else if(ACTION.equals(SocketUtil.ACTIONS[2])){
+                String printStr = "";
+                while (!printStr.equals("#")) {
+                    printStr = scanner.next();
+                }
+                ACTION = null;
+                messageInfo = null;
             }
         }else {
-            System.out.println("选择序号：0." + ACTIONS[0] + " 1." + ACTIONS[1] + " 2." + ACTIONS[2]);
+            System.out.println("选择序号：0." + SocketUtil.ACTIONS[0] + " 1." + SocketUtil.ACTIONS[1] + " 2." + SocketUtil.ACTIONS[2]);
             String orderNumber = scanner.next();
             switch (orderNumber) {
                 case "0":
-                    ACTION = ACTIONS[0];
-                    System.out.print("请输入好友clientId(按Enter键发送消息,按#键和Enter退出聊天):");
+                    ACTION = SocketUtil.ACTIONS[0];
+                    System.out.println("请输入好友用户名(按Enter键发送消息,按#键加Enter退出聊天):");
                     String friendClientId = scanner.next();
-                    messageInfo = initSend(friendClientId, messageInfo);
+                    initSend(friendClientId);
+                    //TODO
                     break;
                 case "1":
-                    ACTION = ACTIONS[1];
-                    messageInfo.setAction(ACTION);
-                    messageInfo = completeHistoryMessageInfo(messageInfo);
+                    System.out.println("请输入对方用户名(按#键加Enter键退出历史查询)：");
+                    String friendId = scanner.next();
+                    messageInfo = completeHistoryMessageInfo(friendId, messageInfo);
                     break;
                 case "2":
-                    messageInfo.setAction(ACTIONS[2]);
+                    messageInfo.setAction(SocketUtil.ACTIONS[2]);
+                    ACTION = SocketUtil.ACTIONS[2];
                     break;
                 default:
                     System.out.println("没有该选项，请重新选择!");
@@ -120,16 +143,50 @@ public class SocketClient {
     }
 
     //初始化发送消息（发送前显示历史消息）
-    protected static MessageInfo initSend(String friendId, MessageInfo messageInfo){
-        FRIEND_CLIENT_ID = friendId;
-        messageInfo.setFriendClientId(FRIEND_CLIENT_ID);
-        messageInfo.setAction(ACTIONS[5]);
-        return messageInfo;
+    protected static void initSend(String friendId){
+        boolean userIsExist = new UserService().checkUserIsExist(friendId);
+        if(userIsExist) {
+            RoomUserService roomUserService = new RoomUserService();
+            String roomId = roomUserService.getSingleRoomIdByUserIds(CLIENT_ID, friendId);
+            if (roomId == null) {
+                //新建room,并关联用户
+                ChatRoom room = roomUserService.createSingleChatRoom(CLIENT_ID, friendId);
+                roomId = room.getRoomId();
+            }
+            ROOM_ID = roomId;
+            MessageReadMarkService messageReadMarkService = new MessageReadMarkService();
+            MessageReadMark messageReadMark = messageReadMarkService.getMessageReadMarkByRoomId(roomId);
+            if (messageReadMark == null) {
+                messageReadMark = new MessageReadMark();
+                messageReadMark.setRoomId(roomId);
+                messageReadMark.setMessageId(0 + "");
+                messageReadMarkService.saveMessageReadMark(messageReadMark);
+            } else {
+                List<MessageInfo> messageInfos = new MessageInfoService().getMessageInfosByRoomId(roomId);
+                if (messageInfos.size() > 0) {
+                    String historyStr = "";
+                    for (int i = 0; i < messageInfos.size(); i++) {
+                        MessageInfo messageInfo = messageInfos.get(i);
+                        String messageMarkId = messageReadMark.getMessageId();
+                        if (Integer.parseInt(messageInfo.getMessageId()) > Integer.parseInt(messageMarkId) && !messageInfo.getClientId().equals(CLIENT_ID)) {
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a");
+                            String dateStr = dateFormat.format(messageInfo.getDate());
+                            String messageStr = dateStr + ": " + messageInfo.getClientId() + ": " + messageInfo.getMessageContent();
+                            historyStr += messageStr + SocketUtil.LINE_SEPARATOR;
+                        }
+                    }
+                    System.out.println(historyStr);
+                }
+            }
+        }else{
+            System.out.println("此用户不存在！");
+        }
     }
 
-    protected static MessageInfo completeSendMessageInfoById(String friendId, MessageInfo messageInfo){
-        FRIEND_CLIENT_ID = friendId;
-        messageInfo.setFriendClientId(FRIEND_CLIENT_ID);
+
+    protected static MessageInfo completeSendMessageInfoByRoomId(String roomId, MessageInfo messageInfo){
+        ROOM_ID = roomId;
+        messageInfo.setRoomId(ROOM_ID);
         Scanner scanner = new Scanner(System.in);
         String messageContent = scanner.next();
         if (messageContent.equals("#")) {
@@ -140,15 +197,11 @@ public class SocketClient {
         return messageInfo;
     }
 
-    protected static MessageInfo completeHistoryMessageInfo(MessageInfo messageInfo){
-        System.out.println("请输入对方clientId(按#键加Enter键退出历史查询)：");
-        Scanner scanner = new Scanner(System.in);
-        String friendClientId = scanner.next();
-        if (friendClientId.equals("#")) {
-            ACTION = null;
-            return null;
-        }
-        messageInfo.setFriendClientId(friendClientId);
+    protected static MessageInfo completeHistoryMessageInfo(String roomId, MessageInfo messageInfo){
+        ACTION = SocketUtil.ACTIONS[1];
+        ROOM_ID = roomId;
+        messageInfo.setAction(ACTION);
+        messageInfo.setRoomId(roomId);
         return messageInfo;
     }
 }
