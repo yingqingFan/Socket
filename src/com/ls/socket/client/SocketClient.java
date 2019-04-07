@@ -97,7 +97,7 @@ public class SocketClient {
         if(ACTION != null){
             messageInfo.setAction(ACTION);
             if(ACTION.equals(SocketUtil.ACTIONS[0])){
-                messageInfo = completeSendMessageInfoByRoomId(ROOM_ID,messageInfo);
+                messageInfo = completeSendMessageInfoByRoomId(ROOM_ID, messageInfo);
             }else if(ACTION.equals(SocketUtil.ACTIONS[1])){
                 String printStr = "";
                 while (!printStr.equals("#")) {
@@ -121,7 +121,7 @@ public class SocketClient {
                     ACTION = SocketUtil.ACTIONS[0];
                     System.out.println("请输入好友用户名(按Enter键发送消息,按#键加Enter退出聊天):");
                     String friendClientId = scanner.next();
-                    initSend(friendClientId);
+                    messageInfo = initSend(friendClientId);
                     //TODO
                     break;
                 case "1":
@@ -143,7 +143,7 @@ public class SocketClient {
     }
 
     //初始化发送消息（发送前显示历史消息）
-    protected static void initSend(String friendId){
+    protected static MessageInfo initSend(String friendId){
         boolean userIsExist = new UserService().checkUserIsExist(friendId);
         if(userIsExist) {
             RoomUserService roomUserService = new RoomUserService();
@@ -176,17 +176,21 @@ public class SocketClient {
                         }
                     }
                     System.out.println(historyStr);
+                    System.out.println("------以上是历史记录------"+SocketUtil.LINE_SEPARATOR);
                 }
             }
+            MessageInfo messageInfo = completeSendMessageInfoByRoomId(roomId, new MessageInfo());
+            return messageInfo;
         }else{
             System.out.println("此用户不存在！");
+            return null;
         }
     }
 
 
     protected static MessageInfo completeSendMessageInfoByRoomId(String roomId, MessageInfo messageInfo){
-        ROOM_ID = roomId;
         messageInfo.setRoomId(ROOM_ID);
+        messageInfo.setAction(ACTION);
         Scanner scanner = new Scanner(System.in);
         String messageContent = scanner.next();
         if (messageContent.equals("#")) {
