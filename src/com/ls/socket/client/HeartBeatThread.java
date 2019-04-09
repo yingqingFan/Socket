@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class HeartBeatThread extends Thread{
-    private static Logger log = Logger.getLogger(com.ls.socket.client.HeartBeatThread.class);
+    private static Logger log = Logger.getLogger(HeartBeatThread.class);
     private Socket socket;
     private String ip;
     private int port;
@@ -27,7 +27,7 @@ public class HeartBeatThread extends Thread{
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
-                log.error(e.getMessage());
+                log.error("InterruptedException", e);
             }
             sendHeartBeat();
         }
@@ -38,7 +38,7 @@ public class HeartBeatThread extends Thread{
         PrintWriter writer = null;
         if(socket != null){
             MessageInfo messageInfo = new MessageInfo();
-            messageInfo.setClientId(SocketClient.CLIENT_ID);
+            messageInfo.setUserId(SocketClient.USER_ID);
             messageInfo.setAction(SocketUtil.ACTIONS[4]);
             messageInfo.setMessageContent("心跳");
             try {
@@ -46,7 +46,7 @@ public class HeartBeatThread extends Thread{
                 writer.println(new Gson().toJson(messageInfo));
                 writer.flush();
             } catch (IOException e) {
-                log.error("error",e);
+                log.error("IOException",e);
                 if(writer != null){
                     writer.close();
                 }

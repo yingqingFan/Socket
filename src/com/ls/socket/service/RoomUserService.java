@@ -3,6 +3,7 @@ package com.ls.socket.service;
 import com.ls.socket.entity.ChatRoom;
 import com.ls.socket.entity.RoomUser;
 import com.ls.socket.util.DataUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +27,14 @@ public class RoomUserService {
     public List<String> getChatRomIdsByUserId(String userId){
         List<String> roomIds = new ArrayList<String>();
         List<RoomUser> roomUsers = new DataUtil<RoomUser>().readFromFile(ROOM_USER_FILE_PATH,RoomUser.class);
-        if(roomUsers.size() > 0){
+        if(roomUsers != null && roomUsers.size() > 0){
             for(int i = 0; i < roomUsers.size(); i++){
-                if(roomUsers.get(i).getUserId().equals(userId)){
-                    roomIds.add(roomUsers.get(i).getRoomId());
+                if(roomUsers.get(i) != null) {
+                    if(!StringUtils.isEmpty(roomUsers.get(i).getUserId())) {
+                        if (roomUsers.get(i).getUserId().equals(userId)) {
+                            roomIds.add(roomUsers.get(i).getRoomId());
+                        }
+                    }
                 }
             }
         }
@@ -39,12 +44,16 @@ public class RoomUserService {
     public List<ChatRoom> getChatRomsByUserId(String userId){
         List<ChatRoom> rooms = new ArrayList<ChatRoom>();
         List<RoomUser> roomUsers = new DataUtil<RoomUser>().readFromFile(ROOM_USER_FILE_PATH,RoomUser.class);
-        if(roomUsers.size() > 0){
+        if(roomUsers != null && roomUsers.size() > 0){
             for(int i = 0; i < roomUsers.size(); i++){
-                if(roomUsers.get(i).getUserId().equals(userId)){
-                    String roomId = roomUsers.get(i).getRoomId();
-                    ChatRoom room = getRoomByRoomId(roomId);
-                    rooms.add(room);
+                if(roomUsers.get(i) != null) {
+                    if (!StringUtils.isEmpty(roomUsers.get(i).getUserId())) {
+                        if (roomUsers.get(i).getUserId().equals(userId)) {
+                            String roomId = roomUsers.get(i).getRoomId();
+                            ChatRoom room = getRoomByRoomId(roomId);
+                            rooms.add(room);
+                        }
+                    }
                 }
             }
         }
@@ -65,7 +74,7 @@ public class RoomUserService {
 
     public String getSingleRoomIdByUserIds(String id1, String id2){
         String roomId = null;
-        //获取friend和client共同的roomId
+        //获取共同的roomId
         List<String> roomIds1 = getChatRomIdsByUserId(id1);
         List<String> roomIds2 = getChatRomIdsByUserId(id2);
         List<String> exists = new ArrayList<String>(roomIds1);
@@ -93,6 +102,8 @@ public class RoomUserService {
         //保存room到文件
         room = saveRoom(room);
         //保存roomUser到文件
+        roomUser1.setRoomId(room.getRoomId());
+        roomUser2.setRoomId(room.getRoomId());
         saveRoomUser(roomUser1);
         saveRoomUser(roomUser2);
         return room;
@@ -115,9 +126,11 @@ public class RoomUserService {
         int id = 1;
         List<RoomUser> roomUsers = new DataUtil<RoomUser>().readFromFile(ROOM_USER_FILE_PATH,RoomUser.class);
         if(roomUsers.size()>0){
-            String latestIdStr = roomUsers.get(roomUsers.size()-1).getRoomUserId();
-            int latestId = Integer.parseInt(latestIdStr);
-            id = latestId+1;
+            if(roomUsers.get(roomUsers.size()-1) != null) {
+                String latestIdStr = roomUsers.get(roomUsers.size() - 1).getRoomUserId();
+                int latestId = Integer.parseInt(latestIdStr);
+                id = latestId + 1;
+            }
         }
         roomUser.setRoomUserId(id+"");
         new DataUtil<RoomUser>().writeToFile(ROOM_USER_FILE_PATH, roomUser);

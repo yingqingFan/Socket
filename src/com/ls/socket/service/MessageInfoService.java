@@ -4,8 +4,6 @@ import com.ls.socket.entity.MessageInfo;
 import com.ls.socket.util.DataUtil;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class MessageInfoService {
@@ -14,7 +12,7 @@ public class MessageInfoService {
 
     public List<MessageInfo> getMessageInfosByRoomId(String roomId){
         List<MessageInfo> messageInfos = new ArrayList<MessageInfo>();
-        List<MessageInfo> allMessageInfos = new DataUtil<MessageInfo>().readFromFile("", MessageInfo.class);
+        List<MessageInfo> allMessageInfos = new DataUtil<MessageInfo>().readFromFile(MESSAGE_FILE_PATH, MessageInfo.class);
         if(allMessageInfos.size()>0) {
             for (int i = 0; i < allMessageInfos.size(); i++) {
                 if (allMessageInfos.get(i).getRoomId().equals(roomId)) {
@@ -25,29 +23,11 @@ public class MessageInfoService {
         return messageInfos;
     }
 
-    //将历史记录按时间排序
-    public List<MessageInfo> sortHistoryByTime(){
-        List<MessageInfo> messageHistoryList = new DataUtil<MessageInfo>().readFromFile(MESSAGE_FILE_PATH, MessageInfo.class);
-        if(messageHistoryList.size()>0) {
-            Collections.sort(messageHistoryList, new Comparator<MessageInfo>() {
-                @Override
-                public int compare(MessageInfo o1, MessageInfo o2) {
-                    if (o1.getDate().before(o2.getDate())) {
-                        return -1;
-                    } else {
-                        return 1;
-                    }
-                }
-            });
-        }
-        return messageHistoryList;
-    }
-
     public synchronized MessageInfo saveMessageInfo(MessageInfo messageInfo){
         int id = 1;
-        List<MessageInfo> messageInfos = new DataUtil<MessageInfo>().readFromFile(MESSAGE_FILE_PATH, MessageInfo.class);
+        List<MessageInfo> messageInfos = new DataUtil<MessageInfo>().readFromFile(MESSAGE_FILE_PATH,MessageInfo.class);
         if(messageInfos.size()>0){
-            String latestIdStr = messageInfos.get(messageInfos.size()-1).getRoomId();
+            String latestIdStr = messageInfos.get(messageInfos.size()-1).getMessageId();
             int latestId = Integer.parseInt(latestIdStr);
             id = latestId+1;
         }

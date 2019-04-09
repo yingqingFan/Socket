@@ -10,7 +10,7 @@ import java.net.Socket;
 import java.util.Date;
 
 public class SendThread extends Thread{
-    private static Logger log = Logger.getLogger(com.ls.socket.client.SendThread.class);
+    private static Logger log = Logger.getLogger(SendThread.class);
     private Socket socket;
     private PrintWriter writer;
     public SendThread(Socket socket) {
@@ -33,11 +33,11 @@ public class SendThread extends Thread{
                 writer.flush();
             }
         }catch (IOException e) {
-            log.error("error",e);
+            log.error("IOException",e);
             try {
                 socket.close();
             } catch (IOException e1) {
-                log.error("error",e1);
+                log.error("IOException",e1);
             }
             if(writer != null) {
                writer.close();
